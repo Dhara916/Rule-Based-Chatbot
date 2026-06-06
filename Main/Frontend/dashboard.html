@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChatBot – Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0f14; --surface: #151820; --surface2: #1c2030;
+      --border: #252a35; --accent: #4f8ef7; --accent2: #7c5cfc;
+      --text: #e8eaf0; --muted: #6b7280; --success: #4ade80;
+      --warning: #fbbf24; --error: #f87171; --radius: 12px;
+    }
+    body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Layout ── */
+    .layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 24px 0;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid var(--border); }
+    .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border-radius: 9px; display: grid; place-items: center; font-size: 18px; }
+    .logo-text { font-size: 17px; font-weight: 700; }
+    .sidebar-nav { padding: 16px 12px; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px;
+      font-size: 14px; font-weight: 500; color: var(--muted);
+      cursor: pointer; text-decoration: none;
+      transition: background .15s, color .15s; margin-bottom: 4px;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(79,142,247,.15); color: var(--accent); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
+    .user-badge {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px; background: var(--surface2);
+    }
+    .avatar { width: 32px; height: 32px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+    .user-info { flex: 1; }
+    .user-name  { font-size: 13px; font-weight: 600; }
+    .user-role  { font-size: 11px; color: var(--accent); }
+    .logout-btn { padding: 5px 10px; background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.2); color: var(--error); border-radius: 7px; font-size: 12px; cursor: pointer; font-family: inherit; }
+
+    /* ── Main ── */
+    .main { padding: 32px; overflow-y: auto; }
+    .page-header { margin-bottom: 28px; }
+    .page-title  { font-size: 24px; font-weight: 700; }
+    .page-sub    { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+    /* ── Stat cards ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      transition: border-color .2s;
+    }
+    .stat-card:hover { border-color: var(--accent); }
+    .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .stat-value { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .stat-sub   { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .stat-card.blue  .stat-value { color: var(--accent); }
+    .stat-card.purple .stat-value { color: var(--accent2); }
+    .stat-card.green  .stat-value { color: var(--success); }
+    .stat-card.yellow .stat-value { color: var(--warning); }
+
+    /* ── Charts row ── */
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+    }
+    .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+    .chart-wrap  { height: 220px; position: relative; }
+
+    /* ── Users table ── */
+    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: var(--surface2); padding: 12px 16px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+    td { padding: 12px 16px; border-top: 1px solid var(--border); }
+    tr:hover td { background: rgba(255,255,255,.02); }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge.admin  { background: rgba(79,142,247,.15); color: var(--accent); }
+    .badge.user   { background: rgba(107,114,128,.15); color: var(--muted); }
+    .badge.active { background: rgba(74,222,128,.15); color: var(--success); }
+    .badge.inactive { background: rgba(248,113,113,.15); color: var(--error); }
+    .action-btn {
+      padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+      cursor: pointer; border: 1px solid; font-family: inherit; transition: opacity .15s;
+    }
+    .action-btn:hover { opacity: .8; }
+    .action-btn.toggle-on  { background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.3); color: var(--error); }
+    .action-btn.toggle-off { background: rgba(74,222,128,.1);  border-color: rgba(74,222,128,.3);  color: var(--success); }
+    .action-btn.promote    { background: rgba(79,142,247,.1);  border-color: rgba(79,142,247,.3);  color: var(--accent); }
+
+    .loading { text-align: center; padding: 40px; color: var(--muted); }
+    .refresh-btn {
+      padding: 7px 14px; border-radius: 8px;
+      background: rgba(79,142,247,.1); border: 1px solid rgba(79,142,247,.2);
+      color: var(--accent); font-family: inherit; font-size: 13px; cursor: pointer;
+    }
+    .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🤖</div>
+      <span class="logo-text">ChatBot</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active"    href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+      <a class="nav-item"           href="chat.html">     <span class="icon">💬</span> Chat</a>
+      <a class="nav-item"           href="settings.html"> <span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-badge">
+        <div class="avatar" id="avatarInitial">A</div>
+        <div class="user-info">
+          <div class="user-name"  id="sidebarUsername">Admin</div>
+          <div class="user-role">Administrator</div>
+        </div>
+        <button class="logout-btn" onclick="logout()">Out</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="page-header">
+      <h1 class="page-title">Admin Dashboard</h1>
+      <p class="page-sub">Overview of chatbot usage and user management</p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value" id="statUsers">–</div>
+        <div class="stat-sub" id="statActive"></div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-label">Total Messages</div>
+        <div class="stat-value" id="statMessages">–</div>
+        <div class="stat-sub" id="statToday"></div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Chat Sessions</div>
+        <div class="stat-value" id="statSessions">–</div>
+        <div class="stat-sub">all time</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-label">Avg Confidence</div>
+        <div class="stat-value" id="statConfidence">–</div>
+        <div class="stat-sub">fuzzy match score</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Top Intents</div>
+        <div class="chart-wrap"><canvas id="intentsChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Message Activity</div>
+        <div class="chart-wrap"><canvas id="activityChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="header-row">
+      <div class="section-title">All Users</div>
+      <button class="refresh-btn" onclick="loadAll()">🔄 Refresh</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Username</th><th>Email</th>
+            <th>Role</th><th>Status</th><th>Language</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersBody">
+          <tr><td colspan="7" class="loading">Loading users…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script>
+  const API   = 'http://localhost:8000';
+  const token = localStorage.getItem('token');
+  const role  = localStorage.getItem('role');
+  const me    = localStorage.getItem('username');
+
+  // Guard: only admins allowed
+  if (!token || role !== 'admin') window.location.href = 'login.html';
+
+  document.getElementById('sidebarUsername').textContent = me || 'Admin';
+  document.getElementById('avatarInitial').textContent   = (me || 'A')[0].toUpperCase();
+
+  const auth = { headers: { Authorization: `Bearer ${token}` } };
+
+  /* ── Fetch analytics ───────────────────────────────────── */
+  async function loadAnalytics() {
+    try {
+      const res  = await fetch(`${API}/admin/analytics`, auth);
+      if (!res.ok) throw new Error();
+      const d    = await res.json();
+
+      document.getElementById('statUsers').textContent      = d.total_users;
+      document.getElementById('statActive').textContent     = `${d.active_users} active`;
+      document.getElementById('statMessages').textContent   = d.total_messages;
+      document.getElementById('statToday').textContent      = `${d.messages_today} today`;
+      document.getElementById('statSessions').textContent   = d.total_sessions;
+      document.getElementById('statConfidence').textContent = d.avg_confidence + '%';
+
+      buildIntentsChart(d.top_intents);
+      buildActivityChart(d.messages_today, d.messages_week);
+    } catch { console.error('Analytics load failed'); }
+  }
+
+  /* ── Chart: top intents ────────────────────────────────── */
+  function buildIntentsChart(intents) {
+    const labels = intents.map(i => i.intent);
+    const values = intents.map(i => i.count);
+    new Chart(document.getElementById('intentsChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: 'rgba(79,142,247,.7)',
+          borderColor    : 'rgba(79,142,247,1)',
+          borderWidth    : 1, borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#6b7280', font: { size: 10 } }, grid: { color: '#252a35' } },
+          y: { ticks: { color: '#6b7280' }, grid: { color: '#252a35' } },
+        }
+      }
+    });
+  }
+
+  /* Chart: activity */
+  function buildActivityChart(today, week) {
+    new Chart(document.getElementById('activityChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Today', 'Rest of week'],
+        datasets: [{
+          data: [today, Math.max(0, week - today)],
+          backgroundColor: ['rgba(79,142,247,.8)','rgba(124,92,252,.5)'],
+          borderColor    : ['#4f8ef7','#7c5cfc'], borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#a0aec0', font: { size: 12 } } } },
+        cutout: '65%',
+      }
+    });
+  }
+
+  /* Fetch users */
+  async function loadUsers() {
+    try {
+      const res   = await fetch(`${API}/admin/users`, auth);
+      const users = await res.json();
+      const tbody = document.getElementById('usersBody');
+
+      if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="loading">No users found.</td></tr>'; return;
+      }
+
+      tbody.innerHTML = users.map(u => `
+        <tr id="row-${u.id}">
+          <td style="font-family:'JetBrains Mono',monospace;color:var(--muted)">#${u.id}</td>
+          <td style="font-weight:600">${escHtml(u.username)}</td>
+          <td style="color:var(--muted)">${escHtml(u.email)}</td>
+          <td><span class="badge ${u.role}">${u.role}</span></td>
+          <td><span class="badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Banned'}</span></td>
+          <td>${u.language === 'hi' ? '🇮🇳 Hindi' : '🇺🇸 English'}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
+            ${u.username !== me ? `
+              <button class="action-btn ${u.is_active ? 'toggle-on' : 'toggle-off'}"
+                onclick="toggleUser(${u.id})">
+                ${u.is_active ? 'Ban' : 'Unban'}
+              </button>
+              <button class="action-btn promote"
+                onclick="changeRole(${u.id}, '${u.role === 'admin' ? 'user' : 'admin'}')">
+                ${u.role === 'admin' ? '→ User' : '→ Admin'}
+              </button>
+            ` : '<span style="color:var(--muted);font-size:12px">You</span>'}
+          </td>
+        </tr>
+      `).join('');
+    } catch { console.error('Users load failed'); }
+  }
+
+  async function toggleUser(id) {
+    await fetch(`${API}/admin/users/${id}/toggle`, { method: 'PATCH', ...auth });
+    loadUsers();
+  }
+
+  async function changeRole(id, role) {
+    await fetch(`${API}/admin/users/${id}/role?role=${role}`, { method: 'PATCH', ...auth });
+    loadUsers();
+  }
+
+  function loadAll() { loadAnalytics(); loadUsers(); }
+
+  function logout() {
+    localStorage.clear(); window.location.href = 'login.html';
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  loadAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChatBot – Settings</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0f14; --surface: #151820; --surface2: #1c2030;
+      --border: #252a35; --accent: #4f8ef7; --accent2: #7c5cfc;
+      --text: #e8eaf0; --muted: #6b7280;
+      --error: #f87171; --success: #4ade80; --radius: 12px;
+    }
+    body.light {
+      --bg: #f0f2f8; --surface: #ffffff; --surface2: #f7f8fc;
+      --border: #e2e6f0; --text: #1a1d2e; --muted: #8892a4;
+    }
+    body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background .3s, color .3s; }
+
+    .layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+    /* ── Sidebar (same as dashboard) ── */
+    .sidebar { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 0; position: sticky; top: 0; height: 100vh; transition: background .3s; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid var(--border); }
+    .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border-radius: 9px; display: grid; place-items: center; font-size: 18px; }
+    .logo-text { font-size: 17px; font-weight: 700; }
+    .sidebar-nav { padding: 16px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--muted); cursor: pointer; text-decoration: none; transition: background .15s, color .15s; margin-bottom: 4px; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(79,142,247,.15); color: var(--accent); }
+    .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
+    .user-badge { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface2); }
+    .avatar { width: 32px; height: 32px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+    .user-info { flex: 1; }
+    .user-name { font-size: 13px; font-weight: 600; }
+    .user-role { font-size: 11px; color: var(--accent); }
+    .logout-btn { padding: 5px 10px; background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.2); color: var(--error); border-radius: 7px; font-size: 12px; cursor: pointer; font-family: inherit; }
+
+    /* Main */
+    .main { padding: 40px 48px; max-width: 700px; }
+    .page-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .page-sub   { color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+
+    /* Settings Sections */
+    .section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 24px; transition: background .3s; }
+    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .section-icon { font-size: 20px; }
+    .section-title { font-size: 16px; font-weight: 700; }
+
+    .field { margin-bottom: 20px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 13px; font-weight: 500; color: #a0aec0; margin-bottom: 7px; }
+    input, select {
+      width: 100%; padding: 10px 14px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-family: inherit; font-size: 14px;
+      transition: border-color .2s, box-shadow .2s; outline: none;
+    }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,142,247,.12); }
+    input::placeholder { color: var(--muted); }
+    input[readonly] { opacity: .6; cursor: not-allowed; }
+    select option { background: #1c2030; }
+
+    /* Toggle switches */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .toggle-label { font-size: 14px; font-weight: 500; }
+    .toggle-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .toggle {
+      position: relative; width: 44px; height: 24px;
+      background: var(--border); border-radius: 12px;
+      cursor: pointer; transition: background .2s; flex-shrink: 0;
+      border: none;
+    }
+    .toggle.on { background: var(--accent); }
+    .toggle::after {
+      content: ''; position: absolute;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; top: 3px; left: 3px;
+      transition: transform .2s;
+    }
+    .toggle.on::after { transform: translateX(20px); }
+
+    /* Buttons */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      padding: 10px 20px; border-radius: var(--radius);
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: opacity .2s, transform .1s; border: none;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: linear-gradient(135deg,var(--accent),var(--accent2)); color: #fff; }
+    .btn-primary:hover { opacity: .85; }
+    .btn-danger  { background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.25); color: var(--error); }
+    .btn-danger:hover { background: rgba(248,113,113,.2); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* Alert */
+    .alert { padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 16px; display: none; }
+    .alert.error   { background: rgba(248,113,113,.1);  border: 1px solid rgba(248,113,113,.3);  color: var(--error);   display: block; }
+    .alert.success { background: rgba(74,222,128,.1);   border: 1px solid rgba(74,222,128,.3);   color: var(--success); display: block; }
+
+    /* Stats */
+    .stats-mini { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .stat-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+    .stat-val  { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+    .stat-lbl  { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .4px; }
+
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🤖</div>
+      <span class="logo-text">ChatBot</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item"        href="chat.html">     <span>💬</span> Chat</a>
+      <a class="nav-item"        href="dashboard.html" id="adminLink" style="display:none"><span>📊</span> Dashboard</a>
+      <a class="nav-item active" href="settings.html"> <span>⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-badge">
+        <div class="avatar" id="avatarInitial">U</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarUser">User</div>
+          <div class="user-role" id="sidebarRole">Member</div>
+        </div>
+        <button class="logout-btn" onclick="logout()">Out</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <h1 class="page-title">Settings</h1>
+    <p class="page-sub">Manage your profile, preferences, and account.</p>
+
+    <!-- Profile Section -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">👤</span>
+        <span class="section-title">Profile</span>
+      </div>
+      <div id="profileAlert" class="alert"></div>
+      <div class="field">
+        <label>Username (cannot be changed)</label>
+        <input id="usernameField" type="text" readonly/>
+      </div>
+      <div class="field">
+        <label>Email Address</label>
+        <input id="emailField" type="email" placeholder="your@email.com"/>
+      </div>
+      <div class="field">
+        <label>Preferred Language</label>
+        <select id="langField">
+          <option value="en">🇺🇸 English</option>
+          <option value="hi">🇮🇳 Hindi (हिन्दी)</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="saveProfileBtn" onclick="saveProfile()">Save Profile</button>
+      </div>
+    </div>
+
+    <!-- Password Section -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🔑</span>
+        <span class="section-title">Change Password</span>
+      </div>
+      <div id="passAlert" class="alert"></div>
+      <div class="field">
+        <label>New Password</label>
+        <input id="newPass" type="password" placeholder="At least 6 characters"/>
+      </div>
+      <div class="field">
+        <label>Confirm New Password</label>
+        <input id="confirmPass" type="password" placeholder="Repeat new password"/>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="savePassBtn" onclick="savePassword()">Update Password</button>
+      </div>
+    </div>
+
+    <!-- Preferences Section -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🎨</span>
+        <span class="section-title">Preferences</span>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Dark Mode</div>
+          <div class="toggle-sub">Switch between dark and light theme</div>
+        </div>
+        <button class="toggle" id="themeToggle" onclick="toggleTheme()"></button>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Voice Output (TTS)</div>
+          <div class="toggle-sub">Bot reads responses aloud</div>
+        </div>
+        <button class="toggle" id="ttsToggle" onclick="toggleTTS()"></button>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Sound Effects</div>
+          <div class="toggle-sub">Play a subtle sound on new messages</div>
+        </div>
+        <button class="toggle" id="sfxToggle" onclick="toggleSFX()"></button>
+      </div>
+    </div>
+
+    <!-- My Stats Section -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">📊</span>
+        <span class="section-title">My Activity</span>
+      </div>
+      <div class="stats-mini">
+        <div class="stat-box"><div class="stat-val" id="mySessions">–</div><div class="stat-lbl">Sessions</div></div>
+        <div class="stat-box"><div class="stat-val" id="myMessages">–</div><div class="stat-lbl">Messages</div></div>
+        <div class="stat-box"><div class="stat-val" id="memberSince">–</div><div class="stat-lbl">Member Since</div></div>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">⚠️</span>
+        <span class="section-title">Danger Zone</span>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+        Deleting your account is permanent. All your chat history, sessions, and data will be removed and cannot be recovered.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-danger" onclick="deleteAccount()">🗑️ Delete My Account</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const API      = 'http://localhost:8000';
+  const token    = localStorage.getItem('token');
+  const role     = localStorage.getItem('role');
+  const username = localStorage.getItem('username');
+
+  if (!token) window.location.href = 'login.html';
+
+  // Init UI
+  document.getElementById('sidebarUser').textContent   = username || 'User';
+  document.getElementById('avatarInitial').textContent = (username || 'U')[0].toUpperCase();
+  document.getElementById('sidebarRole').textContent   = role === 'admin' ? 'Administrator' : 'Member';
+  document.getElementById('usernameField').value       = username || '';
+  if (role === 'admin') document.getElementById('adminLink').style.display = 'flex';
+
+  // Apply saved theme
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('themeToggle').classList.add('on');
+  }
+  if (localStorage.getItem('ttsEnabled') === 'true')
+    document.getElementById('ttsToggle').classList.add('on');
+  if (localStorage.getItem('sfxEnabled') === 'true')
+    document.getElementById('sfxToggle').classList.add('on');
+
+  // Load profile
+  (async function loadProfile() {
+    try {
+      const res  = await fetch(`${API}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      const user = await res.json();
+      document.getElementById('emailField').value = user.email;
+      document.getElementById('langField').value  = user.language;
+
+      // Member since (year only)
+      const yr = new Date(user.created_at).getFullYear();
+      document.getElementById('memberSince').textContent = yr;
+
+      loadStats();
+    } catch { /* ignore */ }
+  })();
+
+  async function loadStats() {
+    try {
+      const res      = await fetch(`${API}/chat/sessions`, { headers: { Authorization: `Bearer ${token}` } });
+      const sessions = await res.json();
+      document.getElementById('mySessions').textContent = sessions.length;
+      // Count messages across sessions
+      let total = 0;
+      sessions.forEach(s => { /* sessions list doesn't include msg count – use length heuristic */ });
+      document.getElementById('myMessages').textContent = '–';
+    } catch { /* ignore */ }
+  }
+
+  // Save Profile 
+  async function saveProfile() {
+    const email    = document.getElementById('emailField').value.trim();
+    const language = document.getElementById('langField').value;
+    const btn      = document.getElementById('saveProfileBtn');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+    try {
+      const res  = await fetch(`${API}/users/profile`, {
+        method : 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body   : JSON.stringify({ email, language }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showAlert('profileAlert', data.detail || 'Update failed.', 'error'); return; }
+      localStorage.setItem('chatLang', language);
+      showAlert('profileAlert', '✅ Profile updated successfully!', 'success');
+    } catch { showAlert('profileAlert', 'Cannot connect to server.', 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Save Profile'; }
+  }
+
+  // Save Password 
+  async function savePassword() {
+    const newPass     = document.getElementById('newPass').value;
+    const confirmPass = document.getElementById('confirmPass').value;
+    const btn         = document.getElementById('savePassBtn');
+
+    if (!newPass || !confirmPass) { showAlert('passAlert', 'Please fill both fields.', 'error'); return; }
+    if (newPass.length < 6)       { showAlert('passAlert', 'Password must be at least 6 characters.', 'error'); return; }
+    if (newPass !== confirmPass)  { showAlert('passAlert', 'Passwords do not match.', 'error'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Updating…';
+
+    try {
+      const res  = await fetch(`${API}/users/profile`, {
+        method : 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body   : JSON.stringify({ password: newPass }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showAlert('passAlert', data.detail || 'Failed.', 'error'); return; }
+      document.getElementById('newPass').value     = '';
+      document.getElementById('confirmPass').value = '';
+      showAlert('passAlert', '✅ Password updated! Please log in again.', 'success');
+      setTimeout(() => { localStorage.clear(); window.location.href = 'login.html'; }, 2000);
+    } catch { showAlert('passAlert', 'Cannot connect to server.', 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Update Password'; }
+  }
+
+  // Delete Account 
+  async function deleteAccount() {
+    if (!confirm('Are you absolutely sure? This cannot be undone.')) return;
+    if (!confirm('Last warning: ALL your data will be permanently deleted.')) return;
+    try {
+      await fetch(`${API}/users/profile`, {
+        method : 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      localStorage.clear();
+      window.location.href = 'register.html';
+    } catch { alert('Delete failed. Please try again.'); }
+  }
+
+  // Toggles
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    document.getElementById('themeToggle').classList.toggle('on', isLight);
+  }
+
+  function toggleTTS() {
+    const enabled = localStorage.getItem('ttsEnabled') === 'true';
+    localStorage.setItem('ttsEnabled', !enabled);
+    document.getElementById('ttsToggle').classList.toggle('on', !enabled);
+  }
+
+  function toggleSFX() {
+    const enabled = localStorage.getItem('sfxEnabled') === 'true';
+    localStorage.setItem('sfxEnabled', !enabled);
+    document.getElementById('sfxToggle').classList.toggle('on', !enabled);
+  }
+
+  // Helpers 
+  function showAlert(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className   = `alert ${type}`;
+    setTimeout(() => { el.className = 'alert'; }, 4000);
+  }
+
+  function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+</script>
+</body>
+</html>
